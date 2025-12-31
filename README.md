@@ -2,6 +2,8 @@
 
 ![Year Activity](stacked_chart.png)
 
+![Year Activity monthly ](stacked_chart_monthly.png)
+
 Python script to sum and show activities summary from Withings raw data (csv)
 
 ## How-To
@@ -11,7 +13,7 @@ Python script to sum and show activities summary from Withings raw data (csv)
 ![Export data](howto.png)
 
 - Wait for download link
-- Download ZIP archive and extract
+- Download ZIP archive and extract to the "data" folder
 - Run  WithingsActivitiesSummary.py
 
 ## Licence

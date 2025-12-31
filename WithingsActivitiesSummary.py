@@ -1,11 +1,28 @@
+'''
+# Withings Activities Summary Graphs
+Python script to sum and show activities summary from Withings raw data (csv)
+
+## How-To
+- Request for data export from your [Withings profile](https://app.withings.com)
+- Wait for download link
+- Download ZIP archive and extract to "data" folder
+- Run  WithingsActivitiesSummary.py
+
+## Licence
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+(c)2025 Petr Klosko
+'''
 import pandas as pd
 import json
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
+import calendar
 
-CSV_SOUBOR = "activities.csv"
-CSV_STEPS  = "aggregates_steps.csv"
+CSV_SOUBOR = "data/activities.csv"
+CSV_STEPS  = "data/aggregates_steps.csv"
 VYSTUP_STACKED = "stacked_chart.png"
+VYSTUP_STACKED_MONTHLY = "stacked_chart_monthly.png"
 VYSTUP_SORTED = "sorted_chart.png"
 
 def safe_parse_json(s):
@@ -132,6 +149,34 @@ ax.legend(handles + virtual_handles, labels + virtual_labels,
           loc="upper left", borderaxespad=0.)
 plt.tight_layout()
 plt.savefig(VYSTUP_STACKED, dpi=150)
+plt.close()
+
+#last year monthly
+df_last_year = df[df["year"] == last_year].copy()
+df_last_year["month"] = df_last_year["from_dt"].dt.month
+monthly_pivot = df_last_year.pivot_table(index="month", columns="activity",
+                       values="distance_km", aggfunc="sum", fill_value=0).sort_index()
+monthly_pivot_renamed = monthly_pivot.copy()
+monthly_pivot_renamed.columns = [label_map.get(c, c) for c in monthly_pivot.columns]
+month_labels = [calendar.month_abbr[m] for m in monthly_pivot_renamed.index]
+
+plt.figure(figsize=(12, 6))
+ax2 = monthly_pivot_renamed.plot(kind="bar", stacked=True, colormap="tab20")
+ax2.set_title(f"Activity in {last_year}", fontsize=14)
+ax2.set_xlabel("Month", fontsize=10)
+ax2.set_ylabel("Distance (km)", fontsize=10)
+ax2.set_xticklabels(month_labels)
+for lbl in ax2.get_xticklabels():
+  lbl.set_rotation(0)
+  lbl.set_fontsize(5)
+
+handles2, labels2 = ax2.get_legend_handles_labels()
+ax2.legend(handles2 + virtual_handles, labels2 + virtual_labels,
+          title=f"Year {last_year} activities", bbox_to_anchor=(1.02, 1),
+          fontsize=9,
+          loc="upper left", borderaxespad=0.)
+plt.tight_layout()
+plt.savefig(VYSTUP_STACKED_MONTHLY, dpi=150)
 plt.close()
 
 totals_sorted = (
