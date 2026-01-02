@@ -15,6 +15,8 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 '''
 import pandas as pd
 import json
+import sys
+import subprocess
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 import calendar
@@ -73,14 +75,28 @@ def decimal_hours_to_hm(time_float: float) -> str:
       return f"{minutes}min"
     else:
       return ""  
-          
+
+def openFile(path):
+    imgViewer = {'linux':'xgd-open',
+                 'win32':'explorer',
+                 'darwin':'open'}[sys.platform]
+    subprocess.Popen([imgViewer, path])            
+
+args = [a.strip().lower() for a in sys.argv[1:] if a.strip()]
+       
 df = pd.read_csv(CSV_SOUBOR, sep=',')
 df["from_dt"] = pd.to_datetime(df["from"], errors="coerce", utc=True)
 df["to_dt"] = pd.to_datetime(df["to"], errors="coerce", utc=True)
 df = df.dropna(subset=["from_dt", "to_dt"])
 df["year"] = df["from_dt"].dt.year.astype(int)
 df["activity"] = df["Activity type"].astype(str)
-df = df[df["activity"] != "Multi Sport"]
+if args:
+  target_activity = args[0]
+  df = df[df["activity"].str.lower() == target_activity]
+else:
+  target_activity = ""
+  df = df[df["activity"] != "Multi Sport"]
+
 df["distance_km"] = df.apply(extract_distance, axis=1) / 1000.0
 df["duration_h"] = (df["to_dt"] - df["from_dt"]).dt.total_seconds() / 3600.0
 df["duration_h"] = df["duration_h"].clip(lower=0)
@@ -121,7 +137,7 @@ pivot_renamed.columns = [label_map.get(c, c) for c in pivot.columns]
 
 plt.figure(figsize=(12, 6))
 ax = pivot_renamed.plot(kind="bar", stacked=True, colormap="tab20")
-plt.title("Year Activity (agg)", fontsize=14)
+plt.title(f"Year Activity (agg) {target_activity}", fontsize=14)
 plt.xlabel("Year", fontsize=12)
 plt.ylabel("Distance (km)", fontsize=12)
 
@@ -148,7 +164,7 @@ ax.legend(handles + virtual_handles, labels + virtual_labels,
           fontsize=9,
           loc="upper left", borderaxespad=0.)
 plt.tight_layout()
-plt.savefig(VYSTUP_STACKED, dpi=150)
+plt.savefig(f"{target_activity}{last_year}-{VYSTUP_STACKED}", dpi=150)
 plt.close()
 
 #last year monthly
@@ -162,7 +178,7 @@ month_labels = [calendar.month_abbr[m] for m in monthly_pivot_renamed.index]
 
 plt.figure(figsize=(12, 6))
 ax2 = monthly_pivot_renamed.plot(kind="bar", stacked=True, colormap="tab20")
-ax2.set_title(f"Activity in {last_year}", fontsize=14)
+ax2.set_title(f"Activity {target_activity} in {last_year}", fontsize=14)
 ax2.set_xlabel("Month", fontsize=10)
 ax2.set_ylabel("Distance (km)", fontsize=10)
 ax2.set_xticklabels(month_labels)
@@ -176,8 +192,9 @@ ax2.legend(handles2 + virtual_handles, labels2 + virtual_labels,
           fontsize=9,
           loc="upper left", borderaxespad=0.)
 plt.tight_layout()
-plt.savefig(VYSTUP_STACKED_MONTHLY, dpi=150)
+plt.savefig(f"{target_activity}{last_year}-{VYSTUP_STACKED_MONTHLY}", dpi=150)
 plt.close()
+openFile(f"{target_activity}{last_year}-{VYSTUP_STACKED_MONTHLY}")
 
 totals_sorted = (
     df.groupby(["year", "activity"], as_index=False)["distance_km"]
@@ -192,12 +209,12 @@ if len(years) == 1:
 for ax, year in zip(axes, years):
     data_year = totals_sorted[totals_sorted["year"] == year]
     ax.barh(data_year["activity"], data_year["distance_km"], color="skyblue")
-    ax.set_title(f"Year {year} – Distance by Activity (Sorted)", fontsize=14)
+    ax.set_title(f"Year {year} – Distance by Activity (Sorted {target_activity})", fontsize=14)
     ax.set_xlabel("Distance (km)", fontsize=12)
     ax.invert_yaxis()
     for i, v in enumerate(data_year["distance_km"]):
         ax.text(v + 0.1, i, f"{v:.2f} km", va="center")
 plt.tight_layout()
-plt.savefig(VYSTUP_SORTED, dpi=150)
+plt.savefig(f"{target_activity}{last_year}-{VYSTUP_SORTED}", dpi=150)
 plt.close()
 

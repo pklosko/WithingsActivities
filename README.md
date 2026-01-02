@@ -1,10 +1,10 @@
 # Withings Activities Summary Graphs
 
+Python script to sum and show activities summary from Withings raw data (csv)
+
 ![Year Activity](stacked_chart.png)
 
-![Year Activity monthly ](stacked_chart_monthly.png)
-
-Python script to sum and show activities summary from Withings raw data (csv)
+![Year Activity monthly](stacked_chart_monthly.png)
 
 ## How-To
 
